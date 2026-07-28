@@ -1,0 +1,17 @@
+{
+  "name": "gesso",
+  "owner": {
+    "name": "Gesso",
+    "url": "https://gesso.build"
+  },
+  "metadata": {
+    "description": "Gesso's anti-slop toolkit: deterministic slop guards, /gesso:critique, and the anti-slop skill."
+  },
+  "plugins": [
+    {
+      "name": "gesso",
+      "source": "./",
+      "description": "73 deterministic slop guards + /gesso:critique second-opinion reviews for HTML/CSS."
+    }
+  ]
+}

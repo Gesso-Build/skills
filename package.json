@@ -1,0 +1,56 @@
+{
+  "name": "@gesso/anti-slop",
+  "version": "0.4.0",
+  "description": "Deterministic design critique for HTML/CSS: 73 slop guards (gradient text, indigo default accent, puffy shadows, emoji icons, fake dataviz, floating hero badges, layout-collapse bugs, em-dash copy, placeholder imagery...) with prevention prompts, detectors, idempotent auto-fixes, and an agent skill + /gesso-critique command.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "bin": {
+    "anti-slop": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    ".claude-plugin",
+    "commands",
+    "skills",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "ai-slop",
+    "design-lint",
+    "html",
+    "css",
+    "generated-ui",
+    "claude",
+    "gesso"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "node-html-parser": "^7.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "typescript": "^5.5.4",
+    "vitest": "^4.1.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Gesso-Build/skills.git"
+  },
+  "homepage": "https://gesso.build",
+  "bugs": {
+    "url": "https://github.com/Gesso-Build/skills/issues"
+  }
+}
