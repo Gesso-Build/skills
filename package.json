@@ -1,6 +1,6 @@
 {
   "name": "@gesso/anti-slop",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Deterministic design critique for HTML/CSS: 73 slop guards (gradient text, indigo default accent, puffy shadows, emoji icons, fake dataviz, floating hero badges, layout-collapse bugs, em-dash copy, placeholder imagery...) with prevention prompts, detectors, idempotent auto-fixes, and an agent skill + /gesso-critique command.",
   "license": "MIT",
   "type": "module",

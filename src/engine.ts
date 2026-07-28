@@ -18,6 +18,22 @@ import type {
 /** Per-rule severity is capped so one runaway pattern can't dwarf the others. */
 export const PER_RULE_SEVERITY_CAP = 4
 
+// Hit details quote evidence from the scanned document, which is untrusted
+// input that ends up embedded in reports, agent context, and retry prompts.
+// Bound what an author of a hostile document can smuggle through: collapse
+// control characters and newlines, and cap the excerpt length.
+const DETAIL_MAX_LENGTH = 80
+
+function sanitizeDetail(detail: string): string {
+  const flat = detail
+    .replace(/[\u0000-\u001f\u007f\u2028\u2029]+/g, " ")
+    .replace(/\s{2,}/g, " ")
+    .trim()
+  return flat.length > DETAIL_MAX_LENGTH
+    ? `${flat.slice(0, DETAIL_MAX_LENGTH)}...`
+    : flat
+}
+
 function isSanctioned<Ctx extends SlopCtxLike>(
   rule: SlopRule<Ctx>,
   ctx: Ctx,
@@ -71,7 +87,7 @@ export function runSlopGuard<Ctx extends SlopCtxLike>(
       gatingTotal += hits.length
       severity += Math.min(PER_RULE_SEVERITY_CAP, hits.length * rule.severity)
     }
-    const examples = hits.slice(0, 3).map((h) => h.detail)
+    const examples = hits.slice(0, 3).map((h) => sanitizeDetail(h.detail))
     issues.push(
       `[${rule.category}/${rule.id}]${advisory ? " [advisory]" : ""} ${hits.length}x: ${rule.tell}` +
         (examples.length > 0 ? ` (e.g. ${examples.join("; ")})` : ""),
