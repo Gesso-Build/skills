@@ -26,7 +26,7 @@ The detector reads `.html` files (inline styles and `<style>` blocks):
 exports, prototypes, static builds, generated screens. It does not parse
 JSX/TSX source; render or export to HTML first, then check the output.
 
-## Install
+# Install
 
 Three paths in, differing in what they deliver:
 
