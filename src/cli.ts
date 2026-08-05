@@ -14,7 +14,7 @@ import { applySlopFixes, runSlopGuard } from "./engine.js"
 import { FLAGSHIP_RULES } from "./rules.js"
 import { runInstall } from "./cli/install.js"
 
-const VERSION = "0.3.0"
+const VERSION = "0.4.2"
 
 function printUsage(): void {
   process.stdout.write(

@@ -5,7 +5,8 @@
 // capped.
 import { describe, expect, it } from "vitest"
 
-import { runSlopGuard } from "../engine.js"
+import { applySlopFixes, runSlopGuard } from "../engine.js"
+import { FLAGSHIP_RULES } from "../rules.js"
 import type { SlopCtx, SlopRule } from "../types.js"
 
 function quotingRule(detail: string): SlopRule<SlopCtx> {
@@ -50,5 +51,41 @@ describe("issue excerpt sanitization", () => {
   it("leaves ordinary short evidence untouched", () => {
     const issue = issueFor('"Lorem ipsum"; "dolor sit amet"')
     expect(issue).toContain('(e.g. "Lorem ipsum"; "dolor sit amet")')
+  })
+})
+
+// The public engine parses HOSTILE input (a `npx skills add` consumer runs it
+// over arbitrary generated HTML). It must terminate with bounded output and
+// never let one rule's regex catastrophically backtrack. Every rule is
+// try/catch-wrapped, so the risk is time, not a throw: if a flagship rule
+// were ReDoS-prone this test times out under vitest's default budget rather
+// than passing. Runs the full registry over a large adversarial document.
+describe("flagship registry is DoS-resistant on hostile input", () => {
+  const adversarial =
+    "<div " +
+    'class="' +
+    "a ".repeat(800) +
+    '" style="' +
+    "color:red;".repeat(800) +
+    '">' +
+    "<span>text </span>".repeat(800) +
+    "<div><style>" +
+    "</div><img onerror=x() src=y>".repeat(400) +
+    "<a href=\"javascript:steal()\">x</a>".repeat(400) +
+    "</div>"
+
+  it("runSlopGuard terminates with a finite, bounded verdict", () => {
+    const check = runSlopGuard(adversarial, {} as SlopCtx, FLAGSHIP_RULES)
+    expect(Number.isFinite(check.severity)).toBe(true)
+    expect(check.severity).toBeGreaterThanOrEqual(0)
+    expect(Array.isArray(check.issues)).toBe(true)
+    // Each excerpt in the report stays capped regardless of input size.
+    for (const issue of check.issues) expect(issue.length).toBeLessThan(600)
+  })
+
+  it("applySlopFixes terminates and returns a string", () => {
+    const result = applySlopFixes(adversarial, {} as SlopCtx, FLAGSHIP_RULES)
+    expect(typeof result.html).toBe("string")
+    expect(Number.isFinite(result.total)).toBe(true)
   })
 })

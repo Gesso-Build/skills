@@ -4,7 +4,7 @@ description: Deterministic design critique for HTML/CSS screens. Runs 73 slop gu
 license: MIT
 metadata:
   author: Gesso (https://gesso.build)
-  version: "0.4.1"
+  version: "0.4.2"
 ---
 
 # Anti-slop check
