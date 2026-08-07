@@ -20,14 +20,21 @@ JSX/TSX source; render or export to HTML first, then check the output.
 # Install
 
 ```bash
-npx skills add Gesso-Build/skills
+npx -y @gessobuild/anti-slop install
 ```
 
-Works with Claude Code, Codex, Cursor, and any agent the
-[skills CLI](https://github.com/vercel-labs/skills) supports. From then on
-the agent runs the check on its own before showing, shipping, or
-committing HTML/CSS; asking for a design critique or a second opinion on
-a screen triggers it directly.
+That copies the skill and the `/gesso-critique` command into the current
+project's `.claude/`, git-reviewable (`--global` targets `~/.claude/`
+instead). From then on the agent runs the check on its own before showing,
+shipping, or committing HTML/CSS; asking for a design critique or a second
+opinion on a screen triggers it directly.
+
+On another agent (Codex, Cursor, Amp, and friends), install through the
+[skills CLI](https://github.com/vercel-labs/skills):
+
+```bash
+npx skills add Gesso-Build/skills
+```
 
 Claude Code users can install the plugin instead, which adds the
 `/gesso:critique` command:
