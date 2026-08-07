@@ -5,7 +5,7 @@ why the pattern reads as generated-UI slop, a before/after pair, and what
 the auto-fix rewrites. Severity is per hit; a rule's total contribution to a
 file's score is capped at 4 so one runaway pattern cannot drown the rest.
 
-Tiers: **FIX** rules are auto-fixed by `npx -y @gesso/anti-slop fix <file>
+Tiers: **FIX** rules are auto-fixed by `npx -y @gessobuild/anti-slop fix <file>
 --write`, deterministically and idempotently. **GATE** rules are
 detect-only: the right fix needs a decision the tool refuses to fake, so
 they are reported for you to resolve. **BASE** rules are additive polish:

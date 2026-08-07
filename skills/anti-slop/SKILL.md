@@ -34,7 +34,7 @@ not taste but correctness.
 1. **Run the detector.**
 
    ```bash
-   npx -y @gesso/anti-slop check <file-or-dir> --json
+   npx -y @gessobuild/anti-slop check <file-or-dir> --json
    ```
 
    Exit code 0 means clean, 1 means slop was found, 2 means no `.html`
@@ -67,7 +67,7 @@ not taste but correctness.
 3. **Apply the deterministic fixes** for everything auto-fixable:
 
    ```bash
-   npx -y @gesso/anti-slop fix <file> --write
+   npx -y @gessobuild/anti-slop fix <file> --write
    ```
 
    Never hand-edit a pattern the fixer owns: the rewrite is deterministic,
@@ -274,13 +274,13 @@ target. A gate is one line anywhere you can run `npx`:
 ```yaml
 # GitHub Actions
 - name: Anti-slop gate
-  run: npx -y @gesso/anti-slop check dist/ --json
+  run: npx -y @gessobuild/anti-slop check dist/ --json
 ```
 
 ```bash
 # .git/hooks/pre-commit (or your hook runner of choice)
 git diff --cached --name-only --diff-filter=ACM | grep '\.html$' | \
-  xargs -r npx -y @gesso/anti-slop check
+  xargs -r npx -y @gessobuild/anti-slop check
 ```
 
 Two judgment calls to make once, deliberately:

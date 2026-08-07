@@ -1,7 +1,7 @@
-// @gesso/anti-slop: deterministic AI-slop detection and fixing for
+// @gessobuild/anti-slop: deterministic AI-slop detection and fixing for
 // generated HTML/CSS.
 //
-//   import { runSlopGuard, applySlopFixes, FLAGSHIP_RULES } from "@gesso/anti-slop"
+//   import { runSlopGuard, applySlopFixes, FLAGSHIP_RULES } from "@gessobuild/anti-slop"
 //
 //   const check = runSlopGuard(html, {}, FLAGSHIP_RULES)   // detect
 //   const fixed = applySlopFixes(html, {}, FLAGSHIP_RULES) // rewrite

@@ -1,4 +1,4 @@
-# @gesso/anti-slop
+# @gessobuild/anti-slop
 
 A deterministic design critique for HTML/CSS, extracted from the guard that
 runs on every screen [Gesso](https://gesso.build) generates in production.
@@ -13,69 +13,48 @@ documented detector with an exact threshold, most with a deterministic,
 idempotent, design-preserving auto-fix. Simple tells are regex-level;
 structural tells are found by parsing the markup (never executing it).
 
-It ships in three layers, so you can adopt whichever fits:
-
-- a **CLI** (`check` / `fix`) that slots into CI and pre-commit,
-- an **agent skill + `/gesso-critique` slash command** that teach a coding
-  agent to run the detector before showing you HTML, fix what is fixable,
-  and give a second opinion that is clearly separated from the evidence,
-- a **library** with the typed rule registry, for wiring the guard into
-  your own generation pipeline.
-
 The detector reads `.html` files (inline styles and `<style>` blocks):
 exports, prototypes, static builds, generated screens. It does not parse
 JSX/TSX source; render or export to HTML first, then check the output.
 
 # Install
 
-Three paths in, differing in what they deliver:
-
-| Install | You get |
-| --- | --- |
-| `npx skills@latest add Gesso-Build/skills` | the `anti-slop` **skill** only, via the [skills CLI](https://github.com/vercel-labs/skills) (works with Claude Code, Codex, Cursor, and friends) |
-| `npx -y @gesso/anti-slop install` | the **skill + the `/gesso-critique` command**, copied into the current project's `.claude/` (git-reviewable; add `--global` for `~/.claude/`) |
-| `/plugin marketplace add Gesso-Build/skills` then `/plugin install gesso@gesso` | the whole toolkit as a Claude Code **plugin**: the skill + `/gesso:critique` |
-
-Nothing to install for one-off checks:
-
 ```bash
-npx -y @gesso/anti-slop check page.html
+npx skills add Gesso-Build/skills
 ```
 
-> The `@gesso/anti-slop` npm package has not had its first publish yet.
-> Until it lands, install through the skills CLI or the plugin
-> marketplace; the `npx @gesso/anti-slop ...` commands on this page will
-> not resolve.
+Works with Claude Code, Codex, Cursor, and any agent the
+[skills CLI](https://github.com/vercel-labs/skills) supports. From then on
+the agent runs the check on its own before showing, shipping, or
+committing HTML/CSS; asking for a design critique or a second opinion on
+a screen triggers it directly.
 
-The skill and command markdown you install is committed here word for word,
-exactly as it ships: [skills/anti-slop/SKILL.md](skills/anti-slop/SKILL.md),
-[skills/anti-slop/references/rules.md](skills/anti-slop/references/rules.md),
-and [commands/critique.md](commands/critique.md). Nothing is generated;
-what you read is what runs.
+Claude Code users can install the plugin instead, which adds the
+`/gesso:critique` command:
 
-## When it runs
+```
+/plugin marketplace add Gesso-Build/skills
+/plugin install gesso@gesso
+```
 
-- **Automatically**: once the skill is installed, an agent reaches for it
-  whenever generated or hand-written HTML/CSS is about to be shown,
-  exported, shipped, or committed, or when you ask for a design critique
-  or a second opinion on a screen.
-- **On demand**: `/gesso:critique <file-or-dir>` (plugin) or
-  `/gesso-critique` (installer) runs the detector, then adds a
-  clearly-labeled judgment layer on top of the evidence.
-- **As a gate**: `check` in CI or a pre-commit hook refuses slop by exit
-  code; see [Wiring it into CI](skills/anti-slop/SKILL.md#wiring-it-into-ci).
+Everything you install is committed here word for word:
+[SKILL.md](skills/anti-slop/SKILL.md),
+[rules.md](skills/anti-slop/references/rules.md),
+[critique.md](commands/critique.md).
 
 ## CLI
 
+Nothing to install for one-off checks and CI:
+
 ```bash
-npx @gesso/anti-slop check page.html          # verdict + tells; exit 1 on slop
-npx @gesso/anti-slop check dist/ --json       # machine-readable, whole tree
-npx @gesso/anti-slop fix page.html --write    # apply the deterministic fixes
-npx @gesso/anti-slop install [--global]       # skill + slash command into .claude/
+npx -y @gessobuild/anti-slop check page.html        # verdict + tells; exit 1 on slop
+npx -y @gessobuild/anti-slop check dist/ --json     # machine-readable, whole tree
+npx -y @gessobuild/anti-slop fix page.html --write  # apply the deterministic fixes
 ```
 
 `check` exits 0 on clean, 1 on slop, 2 on usage errors, so a CI step is one
-line. `fix` is idempotent: running it twice is a no-op.
+line (see [Wiring it into CI](skills/anti-slop/SKILL.md#wiring-it-into-ci)).
+`fix` is idempotent: running it twice is a no-op.
 
 A failing check prints `SLOP (severity N)`: a weighted sum of distinct
 tells, capped at 4 per rule so one runaway pattern cannot drown the rest.
@@ -189,7 +168,7 @@ import {
   applySlopFixes,
   buildSlopConstraintsBlock,
   FLAGSHIP_RULES,
-} from "@gesso/anti-slop"
+} from "@gessobuild/anti-slop"
 
 const check = runSlopGuard(html, {}, FLAGSHIP_RULES)
 // { pass, issues, severity, counts }

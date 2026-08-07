@@ -11,7 +11,7 @@ critique has two layers that must never blur: a deterministic detector pass
 
 ## Layer 1: the detector (evidence)
 
-1. Run `npx -y @gesso/anti-slop check <target> --json`.
+1. Run `npx -y @gessobuild/anti-slop check <target> --json`.
 2. Lead with the verdict, exactly one line: **PASS**, or
    **SLOP (severity N)** with the file name.
 3. Report every guard that fired as a table: guard id, hit count, whether
@@ -28,7 +28,7 @@ critique has two layers that must never blur: a deterministic detector pass
 ## Fixing
 
 - If the user included `fix` in the arguments (or asks after seeing the
-  report): run `npx -y @gesso/anti-slop fix <file> --write` on each flagged
+  report): run `npx -y @gessobuild/anti-slop fix <file> --write` on each flagged
   file, then re-run the check and show the before/after severity.
 - The fixer also injects the BASE-tier polish defaults (marked
   `<style id="gesso-...">` blocks for text wrapping and font smoothing,
