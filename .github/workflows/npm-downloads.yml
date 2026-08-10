@@ -1,0 +1,60 @@
+# Daily npm download telemetry. Captures yesterday's finalized download count
+# for each published package as a PostHog event (npm publishes per-day counts
+# with a lag, so 06:20 UTC reads a settled number). Dashboards read
+# max(count) per day, so a manual re-run can never inflate a day.
+#
+# Requires the POSTHOG_PROJECT_KEY repository secret (the phc_ project key).
+# Without it the job exits cleanly, so forks are unaffected.
+name: npm downloads telemetry
+
+on:
+  schedule:
+    - cron: "20 6 * * *"
+  workflow_dispatch: {}
+
+permissions: {}
+
+jobs:
+  capture:
+    if: github.repository == 'Gesso-Build/skills'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Capture yesterday's npm download counts into PostHog
+        env:
+          POSTHOG_PROJECT_KEY: ${{ secrets.POSTHOG_PROJECT_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "${POSTHOG_PROJECT_KEY}" ]; then
+            echo "POSTHOG_PROJECT_KEY secret is not set; skipping."
+            exit 0
+          fi
+          DAY="$(date -u -d yesterday +%F)"
+          # Add future packages to this list.
+          for PKG in "@gessobuild/anti-slop"; do
+            RESP="$(curl -fsS "https://api.npmjs.org/downloads/point/${DAY}/${PKG}" || true)"
+            COUNT="$(printf '%s' "$RESP" | jq -r '.downloads // empty')"
+            if [ -z "${COUNT}" ]; then
+              echo "No count for ${PKG} on ${DAY} (response: ${RESP}); skipping."
+              continue
+            fi
+            jq -n \
+              --arg key "$POSTHOG_PROJECT_KEY" \
+              --arg pkg "$PKG" \
+              --arg day "$DAY" \
+              --argjson count "$COUNT" \
+              '{
+                api_key: $key,
+                event: "npm_downloads",
+                distinct_id: ("npm:" + $pkg),
+                timestamp: ($day + "T12:00:00Z"),
+                properties: {
+                  package: $pkg,
+                  day: $day,
+                  count: $count,
+                  environment: "production"
+                }
+              }' \
+            | curl -fsS -X POST "https://us.i.posthog.com/i/v0/e/" \
+                -H "Content-Type: application/json" -d @- >/dev/null
+            echo "Captured ${PKG} ${DAY}: ${COUNT}"
+          done
