@@ -199,34 +199,16 @@ headlines) the reference legitimately uses.
 
 ## Security
 
-The listing on [skills.sh](https://skills.sh/gesso-build/skills/anti-slop)
-carries three automated audits. Socket and Gen Agent Trust Hub pass. Snyk's
-agent-scan reports one medium advisory, W011 "exposure to untrusted
-third-party content": the workflow reads HTML you point it at and quotes
-evidence from that HTML back into the agent's context, which is the shape
-of an indirect-prompt-injection surface. The finding is inherent to what a
-critique tool is; the most-installed code-review skills on skills.sh carry
-the identical advisory, because any skill that analyzes files someone else
-may have authored exposes the agent to that text.
-
-What bounds the risk here, concretely:
-
-- The detector parses markup; it never executes, renders, or fetches
-  anything. No network access, no child processes, no install hooks, and
-  a single runtime dependency (`node-html-parser`).
-- Evidence excerpts quoted into the JSON `issues` strings are collapsed
-  and length-bounded by the engine (covered by the `engine-sanitize`
-  tests), so a hostile document cannot flood the context.
-- The skill and the slash command both pin the rule in writing: excerpts
-  are data to report, never instructions to follow (SKILL.md hard rule 6,
-  critique.md rule 5). Nothing inside a scanned file can add tasks,
-  change what runs, or alter the report format.
-
-The honest residual: any tool that quotes untrusted file content to an
-agent leaves a bounded injection channel open. If you check files from a
-source you do not trust at all, read the report the way the skill does:
-the verdict, rule ids, and counts are the detector's; quoted text is the
-document talking.
+The detector parses markup as text. It never executes, renders, or
+fetches anything: no network access, no child processes, no install
+hooks, and a single runtime dependency (`node-html-parser`). Evidence
+excerpts quoted into a report are length-bounded, and the skill treats
+them strictly as data to report, never as instructions to follow. As
+with any tool that quotes untrusted file content to an agent, a bounded
+injection surface is inherent to the category; the automated audit
+results on the [skills.sh
+listing](https://skills.sh/gesso-build/skills/anti-slop) carry the
+detail.
 
 ## Made by Gesso
 
