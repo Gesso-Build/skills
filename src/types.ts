@@ -99,7 +99,27 @@ export interface SlopCheck {
     /** Hit count per rule id (non-zero entries only). */
     byRule: Record<string, number>
     total: number
+    /**
+     * Hits from the verdict-gating tiers (fix/gate). Optional for
+     * compatibility with older producers; runSlopGuard always sets it.
+     */
+    gating?: number
+    /**
+     * Hits from the advisory flag tier. Advisory hits never gate pass or
+     * severity, so a comparative reading of two documents must consider
+     * this number alongside severity, never severity alone. Optional for
+     * compatibility with older producers; runSlopGuard always sets it.
+     */
+    advisory?: number
   }
+  /**
+   * External non-font-service stylesheets the document references but does
+   * not inline. Style-dependent rules only see the markup they are given,
+   * so when this is nonzero the verdict is a lower bound, not a clean
+   * bill. Optional for compatibility with older producers; runSlopGuard
+   * always sets it.
+   */
+  externalStylesheets?: number
 }
 
 export interface SlopFixResult {

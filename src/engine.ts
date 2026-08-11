@@ -34,6 +34,32 @@ function sanitizeDetail(detail: string): string {
     : flat
 }
 
+// A document that links stylesheets it does not inline gives the style-
+// dependent rules partial input, so its verdict is a lower bound. Font-service
+// hosts only deliver @font-face and do not count against completeness.
+const FONT_SERVICE_RE =
+  /fonts\.googleapis\.com|fonts\.gstatic\.com|fonts\.bunny\.net|use\.typekit\.(?:net|com)|api\.fontshare\.com|fonts\.cdnfonts\.com/i
+
+function countExternalStylesheets(html: string): number {
+  let count = 0
+  for (const link of html.matchAll(/<link\b[^>]*>/gi)) {
+    const tag = link[0]
+    if (!/\brel\s*=\s*["']?stylesheet\b/i.test(tag)) continue
+    const href = /\bhref\s*=\s*["']?([^"'\s>]+)/i.exec(tag)?.[1] ?? ""
+    if (!href || href.startsWith("data:") || FONT_SERVICE_RE.test(href)) continue
+    count++
+  }
+  for (const style of html.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style>/gi)) {
+    const body = style[1] ?? ""
+    for (const imp of body.matchAll(/@import\s+(?:url\(\s*)?["']?([^"')\s;]+)/gi)) {
+      const href = imp[1] ?? ""
+      if (!href || href.startsWith("data:") || FONT_SERVICE_RE.test(href)) continue
+      count++
+    }
+  }
+  return count
+}
+
 function isSanctioned<Ctx extends SlopCtxLike>(
   rule: SlopRule<Ctx>,
   ctx: Ctx,
@@ -65,6 +91,7 @@ export function runSlopGuard<Ctx extends SlopCtxLike>(
   const byRule: Record<string, number> = {}
   let severity = 0
   let gatingTotal = 0
+  let advisoryTotal = 0
 
   for (const rule of activeRules(ctx, rules)) {
     // "base" rules inject a base-style default; their absence is not a defect,
@@ -83,7 +110,9 @@ export function runSlopGuard<Ctx extends SlopCtxLike>(
     // in issues and counted in byRule for telemetry, but they never gate the
     // verdict or feed the retry comparator's severity.
     const advisory = rule.tier === "flag"
-    if (!advisory) {
+    if (advisory) {
+      advisoryTotal += hits.length
+    } else {
       gatingTotal += hits.length
       severity += Math.min(PER_RULE_SEVERITY_CAP, hits.length * rule.severity)
     }
@@ -95,7 +124,19 @@ export function runSlopGuard<Ctx extends SlopCtxLike>(
   }
 
   const total = Object.values(byRule).reduce((a, b) => a + b, 0)
-  return { pass: gatingTotal === 0, issues, severity, counts: { byRule, total } }
+  let externalStylesheets = 0
+  try {
+    externalStylesheets = countExternalStylesheets(html)
+  } catch {
+    externalStylesheets = 0
+  }
+  return {
+    pass: gatingTotal === 0,
+    issues,
+    severity,
+    counts: { byRule, total, gating: gatingTotal, advisory: advisoryTotal },
+    externalStylesheets,
+  }
 }
 
 /**
