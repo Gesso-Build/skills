@@ -23,31 +23,42 @@ JSX/TSX source; render or export to HTML first, then check the output.
 npx -y @gessobuild/anti-slop install
 ```
 
-That copies the skill and the `/gesso-critique` command into the current
-project's `.claude/`, git-reviewable (`--global` targets `~/.claude/`
-instead). From then on the agent runs the check on its own before showing,
-shipping, or committing HTML/CSS; asking for a design critique or a second
-opinion on a screen triggers it directly.
+# Use
+
+```
+/gesso-critique page.html
+```
+
+That one command is the whole loop: the deterministic verdict with
+evidence, the auto-fixes on request, then a clearly-labeled second
+opinion. You can also just ask ("check this for slop", "second opinion
+on this screen"), and the installed skill runs the check on its own
+before the agent shows, ships, or commits HTML/CSS.
+
+The install copies the skill and the command into the current project's
+`.claude/`, git-reviewable (`--global` targets `~/.claude/` instead).
+Everything you install is committed here word for word:
+[SKILL.md](skills/anti-slop/SKILL.md),
+[rules.md](skills/anti-slop/references/rules.md),
+[critique.md](commands/critique.md).
+
+## Other ways to install
 
 On another agent (Codex, Cursor, Amp, and friends), install through the
-[skills CLI](https://github.com/vercel-labs/skills):
+[skills CLI](https://github.com/vercel-labs/skills); there is no slash
+command there, so trigger it by asking for a slop check or critique:
 
 ```bash
 npx skills add Gesso-Build/skills
 ```
 
-Claude Code users can install the plugin instead, which adds the
-`/gesso:critique` command:
+Claude Code users can install the plugin instead. Note the plugin spells
+the command `/gesso:critique` (colon, not hyphen):
 
 ```
 /plugin marketplace add Gesso-Build/skills
 /plugin install gesso@gesso
 ```
-
-Everything you install is committed here word for word:
-[SKILL.md](skills/anti-slop/SKILL.md),
-[rules.md](skills/anti-slop/references/rules.md),
-[critique.md](commands/critique.md).
 
 ## CLI
 
