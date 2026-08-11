@@ -45,8 +45,9 @@ Everything you install is committed here word for word:
 ## Other ways to install
 
 On another agent (Codex, Cursor, Amp, and friends), install through the
-[skills CLI](https://github.com/vercel-labs/skills); there is no slash
-command there, so trigger it by asking for a slop check or critique:
+[skills CLI](https://www.skills.sh/gesso-build/skills/anti-slop); there
+is no slash command there, so trigger it by asking for a slop check or
+critique:
 
 ```bash
 npx skills add Gesso-Build/skills
