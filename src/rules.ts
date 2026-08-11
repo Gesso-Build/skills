@@ -305,6 +305,11 @@ const boxShadowDeclRe = (): RegExp =>
   /((?:^|[;{\s])(?:-webkit-|-moz-)?box-shadow\s*:\s*)([^;}]+)/gi
 
 function groupHasSlopShadow(decls: string): boolean {
+  // Honor the pack-wide `--slop-allow` opt-out here too: a declaration group
+  // that names its own shadow as intentional is stating a design decision,
+  // and the fixer must not flatten it. (The border and fill families already
+  // consult the opt-out; this predicate was the gap.)
+  if (declsAllow(decls, "heavy-box-shadow")) return false
   for (const m of decls.matchAll(boxShadowDeclRe())) {
     if (boxShadowIsSlop(m[2])) return true
   }
