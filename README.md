@@ -1,7 +1,7 @@
 # @gessobuild/anti-slop
 
-A deterministic design critique for HTML/CSS, extracted from the guard that
-runs on every screen [Gesso](https://gesso.build) generates in production.
+A deterministic design critique for HTML/CSS, extracted from the set of
+rules professional designers use in production-grade designs.
 
 "Slop" is the set of visual tells that make generated UI read as generated:
 the gradient-clipped headline, the indigo accent nobody chose, the puffy
@@ -213,11 +213,10 @@ detail.
 ## Made by Gesso
 
 This package is maintained by [Gesso](https://gesso.build), the AI
-creative director for builders. The same guard runs on every screen Gesso
-generates, so its designs arrive with the slop already caught. If you
-would rather start from a tasteful design than fix a generated one,
-create it at [app.gesso.build](https://app.gesso.build), then run this
-check on everything else you ship.
+creative team for builders: explore the sea of creative ideas and build
+with Gesso. Designs created at [app.gesso.build](https://app.gesso.build)
+arrive with this check already applied; run it on everything else you
+ship.
 
 ## License
 

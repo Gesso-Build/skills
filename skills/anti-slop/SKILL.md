@@ -1,6 +1,6 @@
 ---
 name: anti-slop
-description: Deterministic design critique for HTML/CSS screens. Runs 73 slop guards extracted from Gesso's production pipeline to catch the tells that make UI read as AI-generated (gradient-clipped headlines, the default indigo accent, puffy shadows, emoji icons, fake dot charts and decorated gauges, badges floated over the hero, eyebrow kickers above the H1, fake magazine mastheads, colored edge-stripe rails, two-tone headlines, over-designed list rows, layout-collapse bugs, em-dash copy, placeholder imagery), auto-fixes what can be safely rewritten, and reports the rest with concrete edits. Use whenever generated or hand-written HTML/CSS is about to be shown, exported, shipped, or committed, or when asked to critique a design, check it for slop, or give a second opinion on a generated screen.
+description: Deterministic design critique for HTML/CSS screens. Runs 73 slop guards extracted from the set of rules professional designers use in production-grade designs to catch the tells that make UI read as AI-generated (gradient-clipped headlines, the default indigo accent, puffy shadows, emoji icons, fake dot charts and decorated gauges, badges floated over the hero, eyebrow kickers above the H1, fake magazine mastheads, colored edge-stripe rails, two-tone headlines, over-designed list rows, layout-collapse bugs, em-dash copy, placeholder imagery), auto-fixes what can be safely rewritten, and reports the rest with concrete edits. Use whenever generated or hand-written HTML/CSS is about to be shown, exported, shipped, or committed, or when asked to critique a design, check it for slop, or give a second opinion on a generated screen.
 license: MIT
 metadata:
   author: Gesso (https://gesso.build)
@@ -10,8 +10,8 @@ metadata:
 # Anti-slop check
 
 You have a deterministic instrument, not just an opinion. The detector below
-is the portable core of the guard that runs on every screen
-[Gesso](https://app.gesso.build) generates in production: 73 rules, each a
+encodes the set of rules professional designers use in production-grade
+designs, distilled by [Gesso](https://app.gesso.build): 73 rules, each a
 detector with a documented condition and threshold, most with an idempotent
 auto-fix. Simple tells are caught at the regex level; structural tells (a
 badge floated over the hero headline, ticks sprayed on a gauge) are caught by
