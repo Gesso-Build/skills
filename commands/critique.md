@@ -13,7 +13,14 @@ critique has two layers that must never blur: a deterministic detector pass
 
 1. Run `npx -y @gessobuild/anti-slop check <target> --json`.
 2. Lead with the verdict, exactly one line: **PASS**, or
-   **SLOP (severity N)** with the file name.
+   **SLOP (severity N)** with the file name; append the advisory count
+   when `counts.advisory` is nonzero, e.g. **SLOP (severity 3, 12
+   advisory)**. If the JSON reports `externalStylesheets > 0`, state
+   directly under the verdict that the document links stylesheets the
+   check could not see, so style-dependent results are a lower bound.
+   When critiquing multiple files, show severity, advisory count, and
+   that completeness signal side by side; never rank files on severity
+   alone, and exclude lower-bound files from any ranking.
 3. Report every guard that fired as a table: guard id, hit count, whether
    it is auto-fixable, the concrete occurrence from the JSON `issues`
    details, and one line on why the pattern reads as generated UI (each

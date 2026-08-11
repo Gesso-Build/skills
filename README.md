@@ -73,13 +73,20 @@ npx -y @gessobuild/anti-slop fix page.html --write  # apply the deterministic fi
 
 `check` exits 0 on clean, 1 on slop, 2 on usage errors, so a CI step is one
 line (see [Wiring it into CI](skills/anti-slop/SKILL.md#wiring-it-into-ci)).
-`fix` is idempotent: running it twice is a no-op.
+Advisory (FLAG-tier) hits are reported for context but never affect the
+verdict or the exit code. `fix` is idempotent: running it twice is a no-op.
 
-A failing check prints `SLOP (severity N)`: a weighted sum of distinct
-tells, capped at 4 per rule so one runaway pattern cannot drown the rest.
-Read 1-2 as an isolated tell, 3-6 as a pattern with a shared cause, and 7+
-as template-grade slop that needs design attention beyond the fixes. A
-`pass` is stricter than a low score: it means zero FIX/GATE hits.
+A failing check prints `SLOP (severity N, M advisory)`: severity is a
+weighted sum of distinct gating tells, capped at 4 per rule so one runaway
+pattern cannot drown the rest, and the advisory count is the genre-dependent
+context that never gates. Read severity 1-2 as an isolated tell, 3-6 as a
+pattern with a shared cause, and 7+ as template-grade slop that needs design
+attention beyond the fixes; those bands are calibrated for a single screen,
+so compare longer documents on severity plus the advisory count together,
+never severity alone. A `pass` is stricter than a low score: it means zero
+FIX/GATE hits. When a document links external stylesheets it does not
+inline, the check says so and every style-dependent result is a lower
+bound.
 
 ## The 73 guards
 

@@ -53,11 +53,13 @@ function runCheck(target: string, json: boolean): number {
     process.stderr.write(`no .html files found under ${target}\n`)
     return 2
   }
-  let slopTotal = 0
+  let gatingTotal = 0
+  let advisoryTotal = 0
   const results = files.map((file) => {
     const html = fs.readFileSync(file, "utf8")
     const check = runSlopGuard(html, {}, FLAGSHIP_RULES)
-    slopTotal += check.counts.total
+    gatingTotal += check.counts.gating ?? check.counts.total
+    advisoryTotal += check.counts.advisory ?? 0
     return { file, ...check }
   })
 
@@ -65,15 +67,29 @@ function runCheck(target: string, json: boolean): number {
     process.stdout.write(JSON.stringify({ results }, null, 2) + "\n")
   } else {
     for (const r of results) {
-      const verdict = r.pass ? "PASS" : `SLOP (severity ${r.severity})`
+      const advisory = r.counts.advisory ?? 0
+      const verdict = r.pass
+        ? advisory > 0
+          ? `PASS (${advisory} advisory)`
+          : "PASS"
+        : `SLOP (severity ${r.severity}${advisory > 0 ? `, ${advisory} advisory` : ""})`
       process.stdout.write(`${r.file}: ${verdict}\n`)
+      if ((r.externalStylesheets ?? 0) > 0) {
+        process.stdout.write(
+          `  note: ${r.externalStylesheets} external stylesheet(s) not inlined; ` +
+            "style-dependent results are a lower bound\n",
+        )
+      }
       for (const issue of r.issues) process.stdout.write(`  ${issue}\n`)
     }
     process.stdout.write(
-      `\n${files.length} file(s), ${slopTotal} slop occurrence(s).\n`,
+      `\n${files.length} file(s), ${gatingTotal} slop occurrence(s), ` +
+        `${advisoryTotal} advisory.\n`,
     )
   }
-  return slopTotal > 0 ? 1 : 0
+  // The exit code is the verdict: advisory (flag-tier) hits report context but
+  // never fail a check, matching the documented pass contract.
+  return gatingTotal > 0 ? 1 : 0
 }
 
 function runFix(target: string, write: boolean): number {
