@@ -1,5 +1,9 @@
 # @gessobuild/anti-slop
 
+[![npm](https://img.shields.io/npm/v/@gessobuild/anti-slop)](https://www.npmjs.com/package/@gessobuild/anti-slop)
+[![license](https://img.shields.io/npm/l/@gessobuild/anti-slop)](LICENSE)
+[![docs](https://img.shields.io/badge/docs-grey)](skills/anti-slop/references/rules.md)
+
 A deterministic design critique for HTML/CSS, extracted from the set of
 rules professional designers use in production-grade designs.
 
