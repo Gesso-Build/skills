@@ -75,6 +75,11 @@ npx -y @gessobuild/anti-slop check dist/ --json     # machine-readable, whole tr
 npx -y @gessobuild/anti-slop fix page.html --write  # apply the deterministic fixes
 ```
 
+On editorial/marketing pages, add `--marketing` to `check` or `fix`:
+`em-dash-copy` then reports as advisory instead of gating, and the fixer
+leaves authored em dashes alone. In interface chrome the tell stays
+gating.
+
 `check` exits 0 on clean, 1 on slop, 2 on usage errors, so a CI step is one
 line (see [Wiring it into CI](skills/anti-slop/SKILL.md#wiring-it-into-ci)).
 Advisory (FLAG-tier) hits are reported for context but never affect the

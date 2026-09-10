@@ -4,7 +4,7 @@ description: Deterministic design critique for HTML/CSS screens. Runs 73 slop gu
 license: MIT
 metadata:
   author: Gesso (https://gesso.build)
-  version: "0.4.2"
+  version: "0.4.3"
 ---
 
 # Anti-slop check
@@ -41,6 +41,11 @@ not taste but correctness.
    files under the target. The detector is fast and safe: simple tells are
    regex-level, structural tells are found by parsing the markup, and the
    HTML is never executed.
+
+   For editorial or marketing pages, add `--marketing`: `em-dash-copy`
+   then reports as advisory instead of gating (an em dash is a defensible
+   typographic choice in longform marketing copy, while staying a tell in
+   interface chrome).
 
 2. **Read the JSON.** One entry per file:
 
@@ -83,7 +88,8 @@ not taste but correctness.
    Never hand-edit a pattern the fixer owns: the rewrite is deterministic,
    idempotent, and design-preserving (it flattens a shadow, it does not
    redesign the card). `fix` takes a single file; loop over the files the
-   check flagged.
+   check flagged. `fix` honors the same `--marketing` flag as `check`: an
+   advisory rule is never rewritten, so authored em dashes survive.
 
 4. **Re-run the check.** The remaining hits are the detect-only guards
    (`transition-all`, `lorem-ipsum`, `placeholder-image`): patterns where no
@@ -288,6 +294,8 @@ and keep it visible in the markup so the decision is reviewable:
 - Replication mode (library API only): when faithfully reproducing a
   reference whose hero legitimately uses a gradient headline, pass
   `{ replicate: true }` and `gradient-text` is sanctioned wholesale.
+- Genre: `--marketing` on `check` and `fix` demotes `em-dash-copy` to
+  advisory for editorial/marketing pages (library API: `marketingRules()`).
 
 ## Wiring it into CI
 
@@ -319,8 +327,9 @@ Two judgment calls to make once, deliberately:
 This is the portable, generator-agnostic core of the guard, not the whole
 of it. Some slop is only decidable with context a static file does not
 carry: the style the design is deliberately committing to, the genre of
-the screen (an app feed and a marketing page earn different patterns),
-what an image slot was meant to hold. If a finding here seems
+the screen (an app feed and a marketing page earn different patterns;
+`--marketing` covers the one genre call you can hand the CLI, the rest
+stays with you), what an image slot was meant to hold. If a finding here seems
 context-blind, that is the honest boundary of a file-level tool; the fix
 is your judgment, applied with the evidence in hand.
 

@@ -78,6 +78,9 @@ function activeRules<Ctx extends SlopCtxLike>(
   return rules.filter((r) => !isSanctioned(r, ctx))
 }
 
+/** Marks an advisory (flag-tier) line in SlopCheck.issues. */
+export const ADVISORY_TAG = "[advisory]"
+
 /**
  * Detect slop in generated HTML. Severity-scored for a retry comparator;
  * style-aware via each rule's sanctionedBy().
@@ -118,7 +121,7 @@ export function runSlopGuard<Ctx extends SlopCtxLike>(
     }
     const examples = hits.slice(0, 3).map((h) => sanitizeDetail(h.detail))
     issues.push(
-      `[${rule.category}/${rule.id}]${advisory ? " [advisory]" : ""} ${hits.length}x: ${rule.tell}` +
+      `[${rule.category}/${rule.id}]${advisory ? ` ${ADVISORY_TAG}` : ""} ${hits.length}x: ${rule.tell}` +
         (examples.length > 0 ? ` (e.g. ${examples.join("; ")})` : ""),
     )
   }
@@ -205,9 +208,12 @@ export function buildSlopConstraintsBlock<Ctx extends SlopCtxLike>(
 
 /** Corrective message for a retry path. */
 export function buildSlopCorrectionPrompt(check: SlopCheck): string {
+  // FLAG hits are advisory by contract: they never gate, so they never get
+  // to steer a retry either (a false positive re-asked here is the model
+  // deleting a legitimate element on request).
   return [
     "Your previous output tripped the AI-slop guard:",
-    ...check.issues.map((i) => `- ${i}`),
+    ...check.issues.filter((i) => !i.includes(ADVISORY_TAG)).map((i) => `- ${i}`),
     "",
     "Re-emit the screen with these patterns removed. Keep every other design decision intact.",
   ].join("\n")

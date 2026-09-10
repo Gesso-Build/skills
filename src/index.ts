@@ -17,7 +17,7 @@ export {
   PER_RULE_SEVERITY_CAP,
   runSlopGuard,
 } from "./engine.js"
-export { FLAGSHIP_RULES } from "./rules.js"
+export { FLAGSHIP_RULES, marketingRules } from "./rules.js"
 export type {
   SlopCategory,
   SlopCheck,

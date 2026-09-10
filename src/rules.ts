@@ -65,19 +65,57 @@ function stripCssComments(css: string): string {
   return css.replace(/\/\*[\s\S]*?\*\//g, "")
 }
 
+// Blank comments to same-length spaces: the brace splitter stays safe AND
+// offsets still line up with the original text, so a rewriter can splice
+// fixed bodies back without losing the comments around them.
+function maskCssComments(css: string): string {
+  return css.replace(/\/\*[\s\S]*?\*\//g, (c) => " ".repeat(c.length))
+}
+
+// A `<style data-gesso-base>` block is a HOST-generated base stylesheet, not
+// generated output: no rule may count it or rewrite it. This MIT mirror cannot
+// import the host's helper, so the marker lives here too.
+const HOST_BASE_SHEET_RE =
+  /\s*<style\b[^>]*\bdata-gesso-base\b[^>]*>[\s\S]*?<\/style>\s*/i
+const HOST_BASE_SHEET_SLOT = "<!--host-base-sheet-->"
+
+/** Wrap a rule so its detect() never sees the host base sheet and its fix()
+ *  never rewrites it. */
+function skipHostBaseSheet(rule: SlopRule<SlopCtx>): SlopRule<SlopCtx> {
+  const { detect, fix } = rule
+  return {
+    ...rule,
+    detect: (html, ctx) => detect(html.replace(HOST_BASE_SHEET_RE, ""), ctx),
+    fix: fix
+      ? (html, ctx) => {
+          const block = HOST_BASE_SHEET_RE.exec(html)?.[0]
+          if (!block) return fix(html, ctx)
+          const out = fix(html.replace(block, HOST_BASE_SHEET_SLOT), ctx)
+          // A fixer that swallowed the slot would drop the host sheet with it:
+          // keep the input rather than damage the document.
+          return out.includes(HOST_BASE_SHEET_SLOT)
+            ? out.replace(HOST_BASE_SHEET_SLOT, () => block)
+            : html
+        }
+      : undefined,
+  }
+}
+
 /** Count <style> rule bodies + inline style="" values matching `predicate`. */
 function eachStyleAndInline(
   html: string,
-  predicate: (decls: string) => boolean,
+  predicate: (decls: string, context?: string) => boolean,
 ): number {
   let n = 0
   for (const block of html.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style>/gi)) {
-    for (const rule of stripCssComments(block[1]).matchAll(/[^{}]+\{([^{}]*)\}/g)) {
-      if (predicate(rule[1])) n++
+    for (const rule of stripCssComments(block[1]).matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+      if (predicate(rule[2], rule[1])) n++
     }
   }
   for (const inline of html.matchAll(/\sstyle\s*=\s*"([^"]*)"/gi)) {
-    if (predicate(inline[1])) n++
+    const at = inline.index ?? 0
+    const open = html.lastIndexOf("<", at)
+    if (predicate(inline[1], open >= 0 ? html.slice(open, at) : undefined)) n++
   }
   return n
 }
@@ -88,21 +126,33 @@ function eachStyleAndInline(
  */
 function rewriteCssGroups(
   html: string,
-  predicate: (decls: string) => boolean,
+  predicate: (decls: string, context?: string) => boolean,
   transform: (decls: string) => string,
 ): string {
   let out = html.replace(/<style\b[^>]*>([\s\S]*?)<\/style>/gi, (full, css: string) => {
-    const clean = stripCssComments(css)
-    const fixed = clean.replace(
-      /([^{}]+)\{([^{}]*)\}/g,
-      (rule: string, sel: string, body: string) =>
-        predicate(body) ? `${sel}{${transform(body)}}` : rule,
-    )
-    return fixed === clean ? full : full.replace(css, () => fixed)
+    // Match against a comment-masked copy but splice rewritten bodies into
+    // the ORIGINAL text by offset: comments outside a rewritten group survive
+    // the fix byte-for-byte (authored files carry real ones; skills#2).
+    const masked = maskCssComments(css)
+    let rebuilt = ""
+    let last = 0
+    let changed = false
+    for (const m of masked.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+      const body = m[2]
+      if (!predicate(body, m[1])) continue
+      const bodyStart = (m.index ?? 0) + m[1].length + 1
+      rebuilt += css.slice(last, bodyStart) + transform(body)
+      last = bodyStart + body.length
+      changed = true
+    }
+    return changed ? full.replace(css, () => rebuilt + css.slice(last)) : full
   })
-  out = out.replace(/\sstyle\s*=\s*"([^"]*)"/gi, (full, val: string) =>
-    predicate(val) ? ` style="${transform(val)}"` : full,
-  )
+  const beforeInline = out
+  out = out.replace(/\sstyle\s*=\s*"([^"]*)"/gi, (full, val: string, offset: number) => {
+    const open = beforeInline.lastIndexOf("<", offset)
+    const context = open >= 0 ? beforeInline.slice(open, offset) : undefined
+    return predicate(val, context) ? ` style="${transform(val)}"` : full
+  })
   return out
 }
 
@@ -2855,9 +2905,25 @@ function pageBackgroundHSL(html: string): { h: number; s: number; l: number } | 
   }
   return null
 }
+// Every family-list value on the page: `font-family:` declarations plus the
+// family tail of `font:` shorthands (the list after the size[/line-height]
+// token). A shorthand with no size token (font:inherit, font:menu) has no
+// family list and yields nothing.
+const FONT_SHORTHAND_TAIL_RE =
+  /[\d.]+(?:px|pt|em|rem|%|vw|vh|ch)\s*(?:\/\s*[\d.]+[a-z%]*)?\s+([^;}]+)/i
+function fontFamilyLists(html: string): string[] {
+  const out: string[] = []
+  for (const m of html.matchAll(/font-family\s*:\s*([^;}]+)/gi)) out.push(m[1])
+  for (const m of html.matchAll(/(?<![-a-z])font\s*:\s*([^;}]+)/gi)) {
+    const tail = m[1].match(FONT_SHORTHAND_TAIL_RE)?.[1]
+    if (tail) out.push(tail)
+  }
+  return out
+}
+
 function pageHasSerifDisplay(html: string): boolean {
-  for (const m of html.matchAll(/font-family\s*:\s*([^;}"]+)/gi)) {
-    const v = m[1].toLowerCase()
+  for (const list of fontFamilyLists(html)) {
+    const v = list.toLowerCase()
     if (/\bserif\b/.test(v) && !/sans-serif\s*$/.test(v.trim()) && !/\bsans\b/.test(v.split(",")[0] ?? ""))
       return true
   }
@@ -2868,8 +2934,8 @@ function pageHasSerifDisplay(html: string): boolean {
 const OVERUSED_FONT_RE = /\b(?:Inter|Space\s+Grotesk|Geist|Instrument\s+Serif)\b/gi
 function findOverusedFonts(html: string): string[] {
   const found = new Set<string>()
-  for (const m of html.matchAll(/font-family\s*:\s*([^;}]+)/gi)) {
-    for (const f of m[1].matchAll(OVERUSED_FONT_RE)) found.add(f[0].replace(/\s+/g, " "))
+  for (const list of fontFamilyLists(html)) {
+    for (const f of list.matchAll(OVERUSED_FONT_RE)) found.add(f[0].replace(/\s+/g, " "))
   }
   for (const m of html.matchAll(/fonts\.googleapis\.com\/css2?\?[^"']*/gi)) {
     for (const f of decodeURIComponent(m[0]).replace(/\+/g, " ").matchAll(OVERUSED_FONT_RE))
@@ -2886,13 +2952,12 @@ const GENERIC_FAMILIES = new Set([
 /** Distinct leading (non-generic) family names declared on the page. */
 function declaredFamilies(html: string): string[] {
   const out = new Set<string>()
-  let decls = 0
-  for (const m of html.matchAll(/font-family\s*:\s*([^;}]+)/gi)) {
-    decls++
-    const first = splitTopLevelCommas(m[1])[0]?.trim().replace(/^["']|["']$/g, "") ?? ""
+  const lists = fontFamilyLists(html)
+  for (const list of lists) {
+    const first = splitTopLevelCommas(list)[0]?.trim().replace(/^["']|["']$/g, "") ?? ""
     if (first && !GENERIC_FAMILIES.has(first.toLowerCase())) out.add(first.toLowerCase())
   }
-  return decls >= 2 ? [...out] : ["", ""] // <2 decls: report as "diverse" (no hit)
+  return lists.length >= 2 ? [...out] : ["", ""] // <2 decls: report as "diverse" (no hit)
 }
 
 // Type-hygiene extremes. Each predicate walks one decls group.
@@ -2976,7 +3041,14 @@ function cardRadiusPx(decls: string): number | null {
   const m = decls.match(/border-radius\s*:\s*([\d.]+)px\b/i)
   return m ? parseFloat(m[1]) : null
 }
-function groupIsOverRounded(decls: string): boolean {
+// Pills and controls round fully on purpose; a selector or owning tag that
+// reads as a link/button/chip is never a blob card (skills#2 field report:
+// a 99px-radius pill <a> was flattened to 24px).
+const PILL_CONTEXT_RE =
+  /(?:^|[\s,>+~(])(?:a|button)\b|\.(?:btn|button|pill|chip|badge|tag|cta|action)(?![a-z])|^<(?:a|button)\b/i
+function groupIsOverRounded(decls: string, context?: string): boolean {
+  if (declsAllow(decls, "over-rounded-card")) return false
+  if (context && PILL_CONTEXT_RE.test(context)) return false
   if (!hasRealFill(decls)) return false
   const r = cardRadiusPx(decls)
   return r !== null && r >= 40 && r <= 120
@@ -3151,7 +3223,7 @@ const APOLOGETIC_ERROR_RE = /\b(?:oops|whoops|uh[- ]?oh)\b[!.]?|something went w
 // Registry
 // ---------------------------------------------------------------------------
 
-export const FLAGSHIP_RULES: SlopRule<SlopCtx>[] = [
+const FLAGSHIP_RULE_SET: SlopRule<SlopCtx>[] = [
   {
     id: "justified-text",
     category: "quality",
@@ -4454,3 +4526,16 @@ export const FLAGSHIP_RULES: SlopRule<SlopCtx>[] = [
     },
   },
 ]
+
+export const FLAGSHIP_RULES: SlopRule<SlopCtx>[] =
+  FLAGSHIP_RULE_SET.map(skipHostBaseSheet)
+
+// Editorial/marketing genre: rules whose tell is real in interface chrome
+// but a defensible authorial choice in longform marketing copy run as
+// advisory (FLAG) instead of gating. One id today; extend deliberately.
+const MARKETING_ADVISORY_IDS = new Set(["em-dash-copy"])
+
+/** The registry with editorial-genre rules demoted to advisory. */
+export function marketingRules(rules: SlopRule[] = FLAGSHIP_RULES): SlopRule[] {
+  return rules.map((r) => (MARKETING_ADVISORY_IDS.has(r.id) ? { ...r, tier: "flag" } : r))
+}

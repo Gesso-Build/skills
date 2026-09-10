@@ -11,10 +11,10 @@
 import * as fs from "node:fs"
 import * as path from "node:path"
 import { applySlopFixes, runSlopGuard } from "./engine.js"
-import { FLAGSHIP_RULES } from "./rules.js"
+import { FLAGSHIP_RULES, marketingRules } from "./rules.js"
 import { runInstall } from "./cli/install.js"
 
-const VERSION = "0.4.2"
+const VERSION = "0.4.3"
 
 function printUsage(): void {
   process.stdout.write(
@@ -22,10 +22,12 @@ function printUsage(): void {
       `anti-slop v${VERSION} (by Gesso, https://gesso.build)`,
       "",
       "Usage:",
-      "  anti-slop check <file.html|dir> [--json]",
+      "  anti-slop check <file.html|dir> [--json] [--marketing]",
       "      Detect AI-slop tells. Exit 0 = clean, 1 = slop found.",
-      "  anti-slop fix <file.html> [--write]",
+      "  anti-slop fix <file.html> [--write] [--marketing]",
       "      Apply deterministic fixes. Prints to stdout; --write edits in place.",
+      "      --marketing: editorial/marketing genre; em-dash copy reports as",
+      "      advisory and is left unrewritten.",
       "  anti-slop install [--global]",
       "      Install the /gesso-critique slash command + anti-slop skill into",
       "      this project's .claude/ (or ~/.claude/ with --global).",
@@ -47,7 +49,8 @@ function htmlFiles(target: string): string[] {
   return out
 }
 
-function runCheck(target: string, json: boolean): number {
+function runCheck(target: string, json: boolean, marketing: boolean): number {
+  const rules = marketing ? marketingRules() : FLAGSHIP_RULES
   const files = htmlFiles(target)
   if (files.length === 0) {
     process.stderr.write(`no .html files found under ${target}\n`)
@@ -57,7 +60,7 @@ function runCheck(target: string, json: boolean): number {
   let advisoryTotal = 0
   const results = files.map((file) => {
     const html = fs.readFileSync(file, "utf8")
-    const check = runSlopGuard(html, {}, FLAGSHIP_RULES)
+    const check = runSlopGuard(html, {}, rules)
     gatingTotal += check.counts.gating ?? check.counts.total
     advisoryTotal += check.counts.advisory ?? 0
     return { file, ...check }
@@ -92,9 +95,9 @@ function runCheck(target: string, json: boolean): number {
   return gatingTotal > 0 ? 1 : 0
 }
 
-function runFix(target: string, write: boolean): number {
+function runFix(target: string, write: boolean, marketing: boolean): number {
   const html = fs.readFileSync(target, "utf8")
-  const result = applySlopFixes(html, {}, FLAGSHIP_RULES)
+  const result = applySlopFixes(html, {}, marketing ? marketingRules() : FLAGSHIP_RULES)
   if (write) {
     fs.writeFileSync(target, result.html)
     const summary = Object.entries(result.fixes)
@@ -127,7 +130,7 @@ function main(): number {
       process.stderr.write("error: check needs a file or directory\n")
       return 2
     }
-    return runCheck(target, rest.includes("--json"))
+    return runCheck(target, rest.includes("--json"), rest.includes("--marketing"))
   }
   if (cmd === "fix") {
     const target = rest.find((a) => !a.startsWith("--"))
@@ -135,7 +138,7 @@ function main(): number {
       process.stderr.write("error: fix needs a file\n")
       return 2
     }
-    return runFix(target, rest.includes("--write"))
+    return runFix(target, rest.includes("--write"), rest.includes("--marketing"))
   }
   if (cmd === "install") {
     return runInstall(rest.includes("--global"))

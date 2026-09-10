@@ -1,6 +1,6 @@
 {
   "name": "gesso",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "description": "Deterministic design critique for HTML/CSS: 73 slop guards extracted from the set of rules professional designers use in production-grade designs. /gesso:critique gives a verdict with evidence and a clearly-labeled second opinion; the anti-slop skill makes agents check and fix generated HTML before it ships.",
   "author": {
     "name": "Gesso",

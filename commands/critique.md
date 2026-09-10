@@ -11,7 +11,9 @@ critique has two layers that must never blur: a deterministic detector pass
 
 ## Layer 1: the detector (evidence)
 
-1. Run `npx -y @gessobuild/anti-slop check <target> --json`.
+1. Run `npx -y @gessobuild/anti-slop check <target> --json`. When the
+   target is clearly an editorial or marketing page (or the user says so),
+   add `--marketing`: em-dash hits then report as advisory, not gating.
 2. Lead with the verdict, exactly one line: **PASS**, or
    **SLOP (severity N)** with the file name; append the advisory count
    when `counts.advisory` is nonzero, e.g. **SLOP (severity 3, 12

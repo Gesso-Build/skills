@@ -91,6 +91,23 @@ describe("type hygiene", () => {
     expect(guard(paired).counts.byRule["single-font-page"]).toBeUndefined()
   })
 
+  it("counts families declared via the font: shorthand", () => {
+    // Field report (skills#2): body face set only through the shorthand must
+    // count toward the declared-family set.
+    const paired = page(
+      `<h1>Title</h1><h2>Sub</h2><p>Body copy long enough to matter.</p>`,
+      `<style>body{font:400 16.5px/1.6 "Mulish", sans-serif}` +
+        `h1{font-family:"Bebas Neue", sans-serif}h2{font-family:"Bebas Neue", sans-serif}</style>`,
+    )
+    expect(guard(paired).counts.byRule["single-font-page"]).toBeUndefined()
+    const mono = page(
+      `<h1>One voice</h1>`,
+      `<style>h1{font:700 48px/1.1 "Inter", sans-serif}p{font:400 16px/1.6 "Inter", sans-serif}</style>`,
+    )
+    expect(guard(mono).counts.byRule["single-font-page"]).toBe(1)
+    expect(guard(mono).counts.byRule["overused-font-stack"]).toBe(1)
+  })
+
   it("relaxes crushed display tracking", () => {
     const html = page(`<h1 style="letter-spacing:-0.06em">Tight</h1>`)
     expect(guard(html).counts.byRule["crushed-tracking"]).toBe(1)
@@ -144,6 +161,21 @@ describe("blob, ghost, and template structures", () => {
     )
     expect(guard(html).counts.byRule["over-rounded-card"]).toBe(1)
     expect(fix(html).html).toContain("border-radius:24px")
+  })
+
+  it("spares 40-120px pills on link/button contexts and honors --slop-allow", () => {
+    // Field report (skills#2): a 99px-radius pill <a> was read as a blob card.
+    const pills = page(
+      `<a class="cta" style="background:#111;color:#fff;border-radius:99px;padding:12px 24px">Get started</a>` +
+        `<button style="background:#111;border-radius:40px">Go</button>`,
+      `<style>.btn{background:#123;border-radius:100px;padding:10px 20px}` +
+        `.hero-card{--slop-allow:over-rounded-card;background:#fff;border-radius:48px}</style>`,
+    )
+    expect(guard(pills).counts.byRule["over-rounded-card"]).toBeUndefined()
+    expect(fix(pills).html).not.toContain("border-radius:24px")
+    // A plain filled card in the same band is still caught.
+    const card = page(`<div style="background:#fff;border-radius:48px">card</div>`)
+    expect(guard(card).counts.byRule["over-rounded-card"]).toBe(1)
   })
 
   it("drops the ghost card's halo, keeping its hairline", () => {

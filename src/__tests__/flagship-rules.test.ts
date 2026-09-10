@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { applySlopFixes, runSlopGuard } from "../engine.js"
-import { FLAGSHIP_RULES } from "../rules.js"
+import { FLAGSHIP_RULES, marketingRules } from "../rules.js"
 
 const guard = (html: string) => runSlopGuard(html, {}, FLAGSHIP_RULES)
 const fix = (html: string) => applySlopFixes(html, {}, FLAGSHIP_RULES)
@@ -126,6 +126,19 @@ describe("motion and copy guards", () => {
     expect(fixed).toContain("Open, minded.")
   })
 
+  it("demotes em-dash-copy to advisory under the marketing genre", () => {
+    const rules = marketingRules()
+    expect(rules.find((r) => r.id === "em-dash-copy")?.tier).toBe("flag")
+    expect(rules.filter((r, i) => r !== FLAGSHIP_RULES[i]).length).toBe(1)
+    const html = `<html lang="en"><body><p>Design ${EM} refined.</p></body></html>`
+    const check = runSlopGuard(html, {}, rules)
+    expect(check.pass).toBe(true)
+    expect(check.counts.advisory).toBe(1)
+    expect(check.counts.gating).toBe(0)
+    // flag tier: the authored dash survives fix
+    expect(applySlopFixes(html, {}, rules).html).toContain(`Design ${EM} refined.`)
+  })
+
   it("spares en-dash ranges, dash runs, and dashes outside visible text", () => {
     const html = `<html lang="en"><head><style>/* a ${EM} comment */</style></head><body><p>Mon${EN}Fri, 9${EN}5</p><p>${EM}${EM}${EM}</p></body></html>`
     expect(guard(html).counts.byRule["em-dash-copy"]).toBeUndefined()
@@ -165,6 +178,32 @@ describe("imagery guards", () => {
   it("does not flag real photo CDNs as placeholders", () => {
     const html = `<html lang="en"><body><img src="https://images.unsplash.com/photo-1" alt="peaks"></body></html>`
     expect(guard(html).counts.byRule["placeholder-image"]).toBeUndefined()
+  })
+})
+
+describe("fix preserves authored CSS comments", () => {
+  it("keeps comments outside the rewritten group (skills#2)", () => {
+    const html = `<!doctype html><html lang="en"><head><style>
+/* Decision ledger: cream ground per 2026-03 review */
+:root{--brand:#123456}
+/* Cards: soft elevation */
+.hero{color:#333}
+.card{background:#fff;border-radius:48px}
+</style></head><body><div class="card">x</div></body></html>`
+    const fixed = fix(html).html
+    expect(fixed).toContain("border-radius:24px")
+    expect(fixed).toContain("/* Decision ledger: cream ground per 2026-03 review */")
+    expect(fixed).toContain("/* Cards: soft elevation */")
+    // Untouched groups survive byte-for-byte
+    expect(fixed).toContain(":root{--brand:#123456}")
+    expect(fixed).toContain(".hero{color:#333}")
+  })
+
+  it("still neutralizes a violation hidden behind an in-body comment", () => {
+    const html = `<!doctype html><html lang="en"><head><style>.card{background:#fff;/* blob */border-radius:48px}</style></head><body><div class="card">x</div></body></html>`
+    const fixed = fix(html).html
+    expect(fixed).toContain("border-radius:24px")
+    expect(fix(fixed).html).toBe(fixed)
   })
 })
 

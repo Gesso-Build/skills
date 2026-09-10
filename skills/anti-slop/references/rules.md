@@ -803,8 +803,11 @@ per block with `--slop-allow: dark-glow`.
 ### over-rounded-card (severity 1, FIX)
 
 **Detects:** a filled surface (real background) whose `border-radius` is
-a single pixel value from 40 to 120. Pills and full circles pass (their
-9999px / 50% conventions fall outside the band), as do unfilled wrappers.
+a single pixel value from 40 to 120. Pills and full circles pass: the
+9999px / 50% conventions fall outside the band, and a selector or owning
+tag that reads as a link, button, chip, badge, or CTA is exempt even
+inside it (a 99px pill on an `<a>` is a pill, not a blob card). Unfilled
+wrappers pass too.
 
 **Why it reads as slop:** 40px+ corners turn content cards into blobs:
 the "friendly" dial turned past its stop, with text left floating in
@@ -1304,7 +1307,10 @@ legitimate and spared.
 
 **Why it reads as slop:** the mid-sentence em dash is the most recognizable
 generated-TEXT tell there is. Interface copy is short; it wants commas,
-colons, and periods, not essayistic asides.
+colons, and periods, not essayistic asides. In longform editorial or
+marketing copy the em dash is a defensible authorial choice: the
+`--marketing` CLI flag (library: `marketingRules()`) demotes this rule to
+advisory there, reporting without gating or rewriting.
 
 ```html
 <!-- bad -->

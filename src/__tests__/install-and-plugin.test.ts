@@ -43,6 +43,25 @@ describe("the member-facing markdown is the single source of truth", () => {
     expect(files.map((f) => f.relPath).sort()).toEqual(onDisk.sort())
   })
 
+  it("the four hand-maintained version spots agree", () => {
+    // package.json, plugin manifest, CLI banner, SKILL.md frontmatter: the
+    // CLI banner has drifted before (it said 0.3.0 at 0.4.x).
+    const pkg = JSON.parse(
+      fs.readFileSync(path.join(PKG_ROOT, "package.json"), "utf8"),
+    ) as { version: string }
+    const manifest = JSON.parse(
+      fs.readFileSync(path.join(PKG_ROOT, ".claude-plugin/plugin.json"), "utf8"),
+    ) as { version: string }
+    const cli = fs.readFileSync(path.join(PKG_ROOT, "src/cli.ts"), "utf8")
+    const skill = fs.readFileSync(
+      path.join(PKG_ROOT, "skills/anti-slop/SKILL.md"),
+      "utf8",
+    )
+    expect(manifest.version).toBe(pkg.version)
+    expect(cli).toContain(`const VERSION = "${pkg.version}"`)
+    expect(skill).toContain(`version: "${pkg.version}"`)
+  })
+
   it("plugin manifest is valid, named gesso, at the package root", () => {
     const manifest = JSON.parse(
       fs.readFileSync(
